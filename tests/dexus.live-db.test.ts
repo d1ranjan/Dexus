@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { and, eq, inArray } from "drizzle-orm";
 import { appRouter } from "../server/routers";
 import * as dexusDb from "../server/db";
-import { authIdentities, brainDumps, documents, followups, goals, knowledge, notes, people, profiles, tasks, timelineEvents, users } from "../drizzle/schema";
+import { aiRequestLogs, authIdentities, brainDumps, documents, followups, goals, knowledge, notes, people, profiles, tasks, timelineEvents, users } from "../drizzle/schema";
 import type { TrpcContext } from "../server/_core/context";
 
 const enabled = process.env.DEXUS_RUN_LIVE_DB_TESTS === "1";
@@ -25,6 +25,7 @@ function context(user: AuthenticatedUser | null): TrpcContext {
 async function cleanupUserData(userIds: number[]) {
   const db = await dexusDb.getDb();
   if (!db || !userIds.length) return;
+  await db.delete(aiRequestLogs).where(inArray(aiRequestLogs.userId, userIds));
   await db.delete(authIdentities).where(inArray(authIdentities.userId, userIds));
   await db.delete(followups).where(inArray(followups.userId, userIds));
   await db.delete(tasks).where(inArray(tasks.userId, userIds));
@@ -134,18 +135,21 @@ describeLive("Dexus live managed-database integration", () => {
     expect((await dexusDb.listKnowledge(userA.id)).some((item) => item.id === knowledgeId)).toBe(false);
   });
 
-  it("runs real Brain Dump extraction, saves approved results, and retrieves them only for the owning user", async () => {
+  it("runs real Brain Dump extraction, saves approved goals, and retrieves them only for the owning user", async () => {
     const callerA = appRouter.createCaller(context(userA));
     const callerB = appRouter.createCaller(context(userB));
-    const originalText = `Create a high priority task to validate Dexus live AI workflow ${suffix} tomorrow. Remember that retrieval must remain private.`;
+    const originalText = `My explicit goal is to complete the Dexus live AI workflow ${suffix} by the end of this term. This week, create its project outline. Remember that retrieval must remain private.`;
     const analysis = await callerA.dexus.processBrainDump({ text: originalText, timezone: "UTC" });
     const extractedCount = analysis.tasks.length + analysis.goals.length + analysis.people.length + analysis.followups.length + analysis.knowledge.length + analysis.notes.length + analysis.events.length;
     expect(extractedCount).toBeGreaterThan(0);
+    expect(analysis.goals.some((goal) => goal.title.includes(suffix))).toBe(true);
     await callerA.dexus.saveBrainDump({ originalText, analysis });
-    const [historyA, searchA, historyB, searchB] = await Promise.all([callerA.brainDumps.list(), callerA.dexus.search({ query: suffix }), callerB.brainDumps.list(), callerB.dexus.search({ query: suffix })]);
+    const [historyA, searchA, goalsA, historyB, searchB, goalsB] = await Promise.all([callerA.brainDumps.list(), callerA.dexus.search({ query: suffix }), callerA.goals.list(), callerB.brainDumps.list(), callerB.dexus.search({ query: suffix }), callerB.goals.list()]);
     expect(historyA.some((item) => item.originalText === originalText)).toBe(true);
     expect(searchA.some((item) => item.subtitle.includes(suffix) || item.title.includes(suffix))).toBe(true);
+    expect(goalsA.some((goal) => goal.title.includes(suffix))).toBe(true);
     expect(historyB.some((item) => item.originalText === originalText)).toBe(false);
     expect(searchB.some((item) => item.subtitle.includes(suffix) || item.title.includes(suffix))).toBe(false);
+    expect(goalsB.some((goal) => goal.title.includes(suffix))).toBe(false);
   }, 60_000);
 });

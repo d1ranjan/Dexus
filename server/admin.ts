@@ -1,7 +1,8 @@
 import { and, count, desc, eq, gte, isNull, like, or, sql } from "drizzle-orm";
 import { adminAuditLogs, aiRequestLogs, brainDumps, documents, followups, goals, knowledge, notes, people, profiles, systemErrors, tasks, timelineEvents, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-import { getDb } from "./db";
+import { deleteDocument, getDb } from "./db";
+import { storageDelete } from "./storage";
 
 export const contentResources = ["tasks", "goals", "notes", "knowledge", "people", "followups", "brainDumps", "timeline", "documents"] as const;
 export type ContentResource = (typeof contentResources)[number];
@@ -94,3 +95,5 @@ export async function aiMetrics() { const db = await database(); const [total, s
 
 export async function listSystemErrors(limit: number) { const db = await database(); return db.select().from(systemErrors).orderBy(desc(systemErrors.createdAt)).limit(limit); }
 export async function resolveSystemError(input: { adminUserId: number; errorId: number; reason: string; requestId?: string }) { const db = await database(); await db.update(systemErrors).set({ status: "resolved", resolvedAt: new Date() }).where(eq(systemErrors.id, input.errorId)); await writeAdminAudit({ adminUserId: input.adminUserId, resource: "system_error", action: "RESOLVE", reason: input.reason, requestId: input.requestId, metadata: { errorId: input.errorId } }); return { success: true }; }
+export async function listDocumentMetadata(limit: number) { const db = await database(); return db.select({ id: documents.id, userId: documents.userId, filename: documents.filename, fileType: documents.fileType, fileSize: documents.fileSize, createdAt: documents.createdAt, userName: users.name, userEmail: users.email }).from(documents).innerJoin(users, eq(users.id, documents.userId)).where(isNull(documents.deletedAt)).orderBy(desc(documents.createdAt)).limit(limit); }
+export async function deletePrivateDocument(input: { adminUserId: number; targetUserId: number; documentId: number; reason: string; requestId?: string }) { const db = await database(); await targetUser(input.targetUserId); const document = (await db.select().from(documents).where(and(eq(documents.id, input.documentId), eq(documents.userId, input.targetUserId), isNull(documents.deletedAt))).limit(1))[0]; if (!document) throw new Error("The document was not found for this user."); await writeAdminAudit({ adminUserId: input.adminUserId, targetUserId: input.targetUserId, resource: "document", action: "DELETE_PRIVATE_DOCUMENT_REQUEST", reason: input.reason, requestId: input.requestId, metadata: { documentId: document.id, fileType: document.fileType, fileSize: document.fileSize } }); await storageDelete(document.storageKey); await deleteDocument(input.targetUserId, document.id, document.filename); await writeAdminAudit({ adminUserId: input.adminUserId, targetUserId: input.targetUserId, resource: "document", action: "DELETE_PRIVATE_DOCUMENT", reason: input.reason, requestId: input.requestId, metadata: { documentId: document.id, fileType: document.fileType, fileSize: document.fileSize } }); return { success: true, id: document.id }; }

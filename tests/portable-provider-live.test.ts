@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractBrainDump } from "../server/ai";
+import { extractBrainDump, summarizeDocument } from "../server/ai";
 import { storageDelete, storageGetSignedUrl, storagePut } from "../server/storage";
 
 const providerReady = Boolean(process.env.GEMINI_API_KEY && process.env.SUPABASE_SECRET_KEY && process.env.SUPABASE_URL);
@@ -15,6 +15,13 @@ describe("portable Gemini and Supabase Storage providers", () => {
     expect(Array.isArray(result.goals)).toBe(true);
     expect(Array.isArray(result.people)).toBe(true);
     expect(result.tasks.some((task) => task.title.toLowerCase().includes("maya"))).toBe(true);
+  }, 45_000);
+
+  it.runIf(providerReady)("returns a readable document summary from Gemini’s structured response", async () => {
+    const summary = await summarizeDocument("The Dexus course project proposal is due Friday. Submit a one-page scope and team list.");
+    expect(summary.length).toBeGreaterThan(20);
+    expect(summary).not.toBe("{}");
+    expect(summary.toLowerCase()).toContain("proposal");
   }, 45_000);
 
   it.runIf(providerReady)("stores, privately reads, and removes a temporary Supabase document", async () => {

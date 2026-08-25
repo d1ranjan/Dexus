@@ -16,6 +16,12 @@ function assertGeminiConfigured() {
   }
 }
 
+export function isTransientGeminiStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
 export async function generateGeminiText(input: {
   systemInstruction: string;
   prompt: string;
@@ -23,7 +29,7 @@ export async function generateGeminiText(input: {
 }): Promise<string> {
   assertGeminiConfigured();
 
-  const response = await fetch(endpoint, {
+  const request = {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -39,11 +45,18 @@ export async function generateGeminiText(input: {
           : {}),
       },
     }),
-  });
+  };
 
-  if (!response.ok) {
-    throw new Error("Dexus AI is temporarily unavailable. Please retry.");
+  let response: Response | undefined;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    response = await fetch(endpoint, request);
+    if (response.ok) break;
+    if (attempt === 1 || !isTransientGeminiStatus(response.status)) {
+      throw new Error("Dexus AI is temporarily unavailable. Please retry.");
+    }
+    await wait(500);
   }
+  if (!response?.ok) throw new Error("Dexus AI is temporarily unavailable. Please retry.");
 
   const payload = (await response.json()) as GeminiResponse;
   const text = payload.candidates?.[0]?.content?.parts

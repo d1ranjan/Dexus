@@ -31,8 +31,26 @@ const brainDumpResponseSchema = {
   required: ["tasks", "goals", "people", "followups", "knowledge", "notes", "events"],
 };
 
-function brainDumpSystemInstruction(timezone: string) {
-  return `You are Dexus's careful private information extractor. Convert a user's natural-language brain dump into a single JSON object with exactly these keys and no others: tasks, goals, people, followups, knowledge, notes, events. All seven keys must be present, including empty arrays. Use only the user's words and direct implications. Do not invent dates, people, facts, priorities, categories, or hidden intent. Current date/time is ${new Date().toISOString()} and user timezone is ${timezone}. Resolve only unambiguous relative dates to YYYY-MM-DD. If a date is vague or ambiguous, set the date field to null and preserve the phrase in dateNote. A person must be explicitly and confidently named before appearing in people or followups. A factual statement worth remembering goes in knowledge; ordinary reflection belongs in notes. Assign priority high only for strong urgency or deadlines, medium by default, and low only for clearly low-stakes items. Return a JSON object only—no markdown fence, explanation, heading, prose, or comments.`;
+const documentSummarySchema = z.object({
+  summary: z.string().trim().min(1).max(1600),
+  deadlines: z.array(z.string().trim().min(1).max(240)).max(12).default([]),
+  tasks: z.array(z.string().trim().min(1).max(280)).max(12).default([]),
+  knowledge: z.array(z.string().trim().min(1).max(420)).max(12).default([]),
+});
+
+const documentSummaryResponseSchema = {
+  type: "object",
+  properties: {
+    summary: { type: "string" },
+    deadlines: { type: "array", items: { type: "string" } },
+    tasks: { type: "array", items: { type: "string" } },
+    knowledge: { type: "array", items: { type: "string" } },
+  },
+  required: ["summary", "deadlines", "tasks", "knowledge"],
+};
+
+export function brainDumpSystemInstruction(timezone: string) {
+  return `You are Dexus's careful private information extractor. Convert a user's natural-language brain dump into a single JSON object with exactly these keys and no others: tasks, goals, people, followups, knowledge, notes, events. All seven keys must be present, including empty arrays. Use only the user's words and direct implications. Do not invent dates, people, facts, priorities, categories, or hidden intent. Current date/time is ${new Date().toISOString()} and user timezone is ${timezone}. Resolve only unambiguous relative dates to YYYY-MM-DD. If a date is vague or ambiguous, set the date field to null and preserve the phrase in dateNote. A person must be explicitly and confidently named before appearing in people or followups. A goal is a desired outcome, target, ambition, or longer-term result; a task is a concrete action or next step. When the user explicitly says “goal”, “target”, “aim”, “want to”, or “working toward”, preserve that outcome in goals even if it has no date. If the same input has immediate steps, extract those separately as tasks. Never leave an explicit user-stated goal unrepresented merely because its category, deadline, or plan is not stated. A factual statement worth remembering goes in knowledge; ordinary reflection belongs in notes. Assign priority high only for strong urgency or deadlines, medium by default, and low only for clearly low-stakes items. Return a JSON object only—no markdown fence, explanation, heading, prose, or comments.`;
 }
 
 export function responseText(response: { error?: { message?: unknown }; choices?: Array<{ message?: { content?: unknown } }> }) {
@@ -70,8 +88,29 @@ export async function extractBrainDump(input: { text: string; timezone: string }
   return result.data;
 }
 
-export async function summarizeDocument(text: string) {
-  return generateGeminiText({ systemInstruction: "You summarize only the provided document. Return JSON with exactly summary (a concise useful summary), deadlines (array of direct deadline phrases), tasks (array of direct assignment/action statements), and knowledge (array of significant factual points). Do not invent information. Return JSON only, without markdown or commentary.", prompt: text.slice(0, 24000), responseSchema: { type: "object" } });
+export function parseDocumentSummary(raw: string): string {
+  const result = documentSummarySchema.safeParse(parseAIJsonObject(raw));
+  if (!result.success) throw new Error("Dexus could not validate the document summary. Please retry.");
+  const details = [
+    result.data.deadlines.length ? `Deadlines: ${result.data.deadlines.join("; ")}` : "",
+    result.data.tasks.length ? `Actions: ${result.data.tasks.join("; ")}` : "",
+    result.data.knowledge.length ? `Key points: ${result.data.knowledge.join("; ")}` : "",
+  ].filter(Boolean);
+  return [result.data.summary, ...details].join("\n\n");
+}
+
+export function documentSummaryNeedsRegeneration(summary: string | null | undefined): boolean {
+  const normalized = summary?.trim() ?? "";
+  return !normalized || normalized === "{}";
+}
+
+export async function summarizeDocument(text: string): Promise<string> {
+  const raw = await generateGeminiText({
+    systemInstruction: "You summarize only the provided document. Return one JSON object with exactly summary, deadlines, tasks, and knowledge. summary must be a concise useful plain-language explanation. deadlines contains only direct deadline phrases. tasks contains only explicit assignments or actions. knowledge contains significant factual points. Use empty arrays when no items apply. Do not invent information. Return JSON only, without markdown or commentary.",
+    prompt: text.slice(0, 24000),
+    responseSchema: documentSummaryResponseSchema,
+  });
+  return parseDocumentSummary(raw);
 }
 
 export async function answerFromContext(question: string, context: string, purpose: "assistant" | "briefing" | "insights" | "search") {

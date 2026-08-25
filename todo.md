@@ -89,5 +89,10 @@
 - [x] Create a reusable skill for secure GitHub Pages, Render, Supabase Auth, Gemini, and Supabase Storage deployment workflows.
 - [x] Verify the live Supabase confirmation and recovery callback configuration, GitHub Pages callback route, and Render callback handler before saving the requested Dexus version; final email-inbox click remains a user-side check.
 - [x] Create a downloadable ZIP archive of the current Dexus source, excluding secrets, dependencies, transient builds, and local runtime files.
-- [ ] Verify the current production Supabase confirmation/recovery redirects, GitHub Pages callback, Render authentication contract, and remaining email-inbox click requirement.
-- [ ] Repair the GitHub Pages static export so it embeds the Render API URL instead of falling back to same-origin API requests, then re-run production authentication checks.
+- [x] Verify the current production Supabase confirmation/recovery redirects, GitHub Pages callback, Render authentication contract, and remaining email-inbox click requirement.
+- [x] Repair the GitHub Pages static export so it embeds the Render API URL instead of falling back to same-origin API requests, then re-run production authentication checks.
+- [x] Diagnose and repair saved Dexus documents that show no generated Gemini summary, without altering the original uploads or user isolation.
+- [x] Diagnose and repair Brain Dump reports of “no items detected” when the input contains explicit goals; preserve existing goals and user isolation.
+- [x] Add a confirmed self-service delete action that removes only the signed-in user’s document record and its private stored file.
+- [ ] Publish the latest Dexus frontend and backend updates so confirmed document deletion is available through GitHub Pages and Render.
+- [x] Add an audited administrator-only action to permanently remove a selected user’s private document and stored file with explicit confirmation.
