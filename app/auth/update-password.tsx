@@ -1,0 +1,18 @@
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+
+import { ScreenContainer } from "@/components/screen-container";
+import { useColors } from "@/hooks/use-colors";
+import * as Api from "@/lib/_core/api";
+import { getDexusSession } from "@/lib/dexus-session";
+
+export default function UpdatePasswordScreen() {
+  const colors = useColors();
+  const [password, setPassword] = useState(""); const [confirm, setConfirm] = useState(""); const [ready, setReady] = useState(false); const [pending, setPending] = useState(false); const [error, setError] = useState<string | null>(null);
+  useEffect(() => { getDexusSession().then((session) => { if (!session) setError("This password reset link has expired. Request a new one from Dexus."); setReady(true); }); }, []);
+  const save = async () => { setError(null); if (password.length < 8) { setError("Use a password with at least 8 characters."); return; } if (password !== confirm) { setError("Your passwords do not match."); return; } setPending(true); try { await Api.updatePassword(password); const session = await getDexusSession(); if (!session) throw new Error("Dexus could not restore your session."); await Api.establishSession(session.access_token); router.replace("/(tabs)"); } catch (caught) { setError(caught instanceof Error ? caught.message : "Dexus could not update your password."); } finally { setPending(false); } };
+  return <ScreenContainer className="px-6" edges={["top", "bottom", "left", "right"]}><View style={styles.page}><Text style={[styles.title, { color: colors.foreground }]}>Choose a new password</Text><Text style={[styles.body, { color: colors.muted }]}>Your new password will protect your private Dexus workspace.</Text>{!ready ? <ActivityIndicator color={colors.primary} /> : <><TextInput value={password} onChangeText={setPassword} placeholder="New password" placeholderTextColor={colors.muted} style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} secureTextEntry autoComplete="new-password" textContentType="newPassword" /><TextInput value={confirm} onChangeText={setConfirm} placeholder="Confirm new password" placeholderTextColor={colors.muted} style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} secureTextEntry autoComplete="new-password" textContentType="newPassword" />{error && <Text style={[styles.message, { color: colors.error }]}>{error}</Text>}<Pressable disabled={pending || !!error?.includes("expired")} onPress={save} style={({ pressed }) => [styles.button, { backgroundColor: colors.primary }, (pressed || pending) && styles.pressed]}>{pending ? <ActivityIndicator color={colors.background} /> : <Text style={[styles.buttonLabel, { color: colors.background }]}>Save new password</Text>}</Pressable><Pressable onPress={() => router.replace("/welcome")}><Text style={[styles.cancel, { color: colors.primary }]}>Return to sign in</Text></Pressable></>}</View></ScreenContainer>;
+}
+
+const styles = StyleSheet.create({ page: { flex: 1, gap: 14, justifyContent: "center" }, title: { fontSize: 30, fontWeight: "800", letterSpacing: -0.8 }, body: { fontSize: 15, lineHeight: 23, marginBottom: 8 }, input: { borderRadius: 12, borderWidth: 1, fontSize: 16, height: 52, paddingHorizontal: 14 }, message: { fontSize: 13, lineHeight: 19 }, button: { alignItems: "center", borderRadius: 13, height: 52, justifyContent: "center", marginTop: 4 }, buttonLabel: { fontSize: 15, fontWeight: "700" }, cancel: { fontSize: 13, fontWeight: "700", textAlign: "center" }, pressed: { opacity: 0.86, transform: [{ scale: 0.985 }] } });

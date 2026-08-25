@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1763372440610,
+      "tag": "0000_elite_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1787535980709,
+      "tag": "0001_shallow_scorpion",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787536111132,
+      "tag": "0002_sticky_unicorn",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787540549316,
+      "tag": "0003_thick_molly_hayes",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787542078042,
+      "tag": "0004_greedy_blazing_skull",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1787547621173,
+      "tag": "0005_chief_rattler",
+      "breakpoints": true
+    }
+  ]
+}

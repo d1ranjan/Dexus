@@ -1,0 +1,93 @@
+# Project TODO
+
+- [x] Define production-ready shared domain types and validation schemas for Dexus entities.
+- [x] Add relational database schema and safe user-scoped authorization for profiles, tasks, notes, knowledge, goals, people, follow-ups, timeline events, documents, and brain dumps.
+- [x] Build server-side authenticated CRUD and unified search procedures with robust validation and error handling.
+- [x] Implement server-side AI brain-dump analysis and structured result persistence without exposing credentials.
+- [ ] Build account access, protected routing, session persistence, profile controls, and logout flow.
+- [x] Create the Dexus mobile design system, navigation shell, and accessible interaction primitives.
+- [x] Build Home, Brain Dump, Task, Knowledge, Goal, People, Timeline, Insight, Search, and Settings experiences.
+- [x] Implement creation, editing, deletion, and completion workflows for all core user content.
+- [x] Create a unique Dexus app icon and apply final branding configuration.
+- [x] Add deterministic tests for core server and mobile data transformations.
+- [ ] Validate TypeScript, database schema, server procedures, and key end-to-end interaction states.
+- [ ] Review the final mobile UI at phone dimensions and deliver a checkpointed product build.
+- [x] Safely reconcile the partially provisioned empty Dexus tables with the managed migration journal.
+- [x] Add isolated in-memory tests for Brain Dump persistence and retrieval flows while the managed database is unavailable.
+- [x] Polish offline, unauthenticated, loading, error, and empty states without claiming live persistence verification.
+- [x] Prepare a database-resumption checklist for schema, journal, relationship, CRUD, persistence, authentication, and isolation validation.
+- [x] Implement OAuth entry, protected mobile routing, profile controls, and logout UI; live session persistence verification remains pending the managed database.
+- [x] Validate TypeScript plus structured AI extraction and isolated in-memory workflow semantics; live database validation remains pending.
+- [x] Generate an optimized connected-thought Dexus app-icon set under the checkpoint media-size limit, verify the references, and retry the checkpoint without touching database work.
+- [x] Check managed database availability and recover a secure non-destructive connection path.
+- [x] Reconcile the existing empty Dexus schema and migration journal without destructive changes.
+- [x] Verify tables, indexes, constraints, relationships, and user-scoped authorization against the live database.
+- [ ] Verify real OAuth authentication, profile creation, CRUD persistence across refresh/logout-login, and user-data isolation.
+- [x] Verify the complete Brain Dump → AI extraction → approved persistence → dashboard/search/timeline retrieval workflow against the live database.
+- [x] Diagnose the test-only raw AI extraction response without persisting it, harden server-side normalization, and add a regression test for the observed failure.
+- [x] Verify live protected access, profile persistence, core-entity CRUD, fresh-context retrieval, user-data isolation, and automatic test-data cleanup against the managed database.
+- [x] Define the Dexus admin and suspended-account security model with server-enforced authorization and documented privacy boundaries.
+- [x] Add safe administrative database structures for immutable audit records, account state, AI request telemetry, operational errors, and storage metadata.
+- [x] Build server-only admin procedures for metrics, user management, controlled content access, exports, and administrative action logging.
+- [x] Add protected Dexus Admin overview, user management, content-access confirmation, audit, storage, AI monitoring, database health, and error interfaces.
+- [x] Test normal-user denial, administrator authorization, audit logging, controlled content access, suspension, exports, and privacy-safe telemetry.
+- [x] Audit editable user-facing Dexus content, metadata, documentation, and project configuration for product-builder references.
+- [x] Add professional creator and ownership attribution for Dipanshu Ranjan across landing, About, settings, footer, admin, metadata, and documentation surfaces.
+- [x] Verify the existing server-side owner/admin model remains securely controlled and normal users cannot elevate privileges.
+- [x] Run branding, security, user-isolation, database, AI, and mobile regression checks without destructive changes.
+- [x] Audit actual Dexus data, storage, AI, authentication, administrative-access, deployment, and mobile-test behavior for accurate launch documentation.
+- [x] Add implementation-grounded Privacy Policy and Terms pages with legal-review labeling, effective date, creator attribution, and connected legal links.
+- [x] Prepare non-active custom-domain and DNS instructions without inventing or configuring a domain.
+- [x] Validate legal-page navigation, core regressions, and the strongest available mobile simulation; clearly distinguish unavailable physical-device checks.
+- [ ] Perform manual physical-device verification of Sign In, About, legal links, keyboard, safe-area, touch-target, scroll, light/dark, network-error, and session flows when a connected test device is available.
+- [ ] Produce a read-only, implementation-grounded report of Dexus authentication, database, tables, and file/object storage architecture.
+- [x] Assess the current OAuth/session architecture and define a secure Supabase Auth migration that preserves existing Dexus user data and owner controls.
+- [x] Configure Supabase Auth credentials, redirect/deep-link handling, and server-side token verification without exposing secrets to the mobile client.
+- [x] Build a fully branded Dexus email/password sign-in, sign-up, password-recovery, session, and account-management experience.
+- [x] Preserve legacy Dexus user relationships through an additive Supabase identity map; do not create duplicate Dexus users.
+- [x] Add branded email verification, password reset, and account recovery flows without exposing Supabase secrets or service-role credentials to the client.
+- [ ] Verify new registration, legacy-account mapping, sign-in, sign-out, session persistence, password recovery, protected routes, admin continuity, and cross-user isolation before completing authentication.
+- [ ] Correct Supabase redirect guidance after the Expo Go localhost verification limitation: validate email flows through the web preview and document that native confirmation and recovery links require a Dexus development or production build.
+- [x] Diagnose and correct the web-preview NetworkError encountered while Dexus attempts Supabase authentication or server session establishment.
+- [x] Route browser sign-up, sign-in, recovery, and password update requests through the Dexus server because the web preview continues to reject direct Supabase browser requests after API-route correction.
+- [x] Confirm the current signed-in Supabase identity map and assign that one Dexus account the server-enforced initial administrator role without weakening audit or user-isolation controls.
+- [x] Pause the Supabase Auth migration after the initial-admin assignment and preserve an accurate continuation record for remaining end-to-end validation.
+- [ ] Resume and complete the remaining evidence-based Supabase Auth validation for browser flows, protected routes, administrator continuity, and cross-user isolation.
+- [x] Replace the residual direct Supabase SDK token lookup in tRPC with the Dexus-managed secure session store before protected-route validation.
+- [ ] Complete the remaining Supabase Auth validation with automated server and managed-database evidence; defer nonessential manual browser checks to a concise follow-up.
+- [x] Complete the resumed automated Supabase Auth endpoint, identity-mapping, protected-route, administrator, and managed-database isolation validation.
+- [x] Investigate the reported phone internal-error problem with a full source, configuration, dependency, build, server, authentication, and mobile-runtime readiness review.
+- [x] Install the required Expo Asset peer dependency and align incompatible Expo SDK 54 package versions, including Document Picker and Network, before retesting Android bundling.
+- [x] Handle Supabase confirmation and recovery links delivered while Dexus is already open, not only cold-start callback URLs.
+- [x] Remove high-frequency theme-provider debug logging so real phone runtime errors remain visible in device logs.
+- [ ] Prepare the owner-authorized Dexus production release, create a release checkpoint, verify the managed deployment domain and backend, and validate public authentication/API contracts.
+- [x] Replace the Dexus connected-nodes launcher icon with the user-supplied black-and-white mirror artwork across all required mobile icon assets and verify the rebuilt configuration.
+- [x] Cancel the requested rollback before execution and preserve the current Dexus version with the black-and-white mirror icon.
+- [ ] Diagnose the reported production publish build that remains in progress and confirm the managed release state.
+- [ ] Resolve the managed deployment frontend-root `503` after backend health returned `200`; this remains a platform release-status issue rather than a confirmed Dexus server failure.
+- [ ] Reconfirm the current managed production domain, backend health, and public sign-in contract after the renewed owner authorization request.
+- [ ] Verify the owner-confirmed completed Dexus publication: public frontend root, backend health, and sign-in response for the current black-and-white mirror icon release.
+- [ ] Prepare the current Dexus project for safe GitHub upload, including repository hygiene, secret protection, and owner-facing upload instructions.
+- [x] Correct the reported Supabase localhost confirmation-link fallback so new Dexus users can verify accounts and recover passwords through branded callback URLs.
+- [x] Assess and prepare a GitHub Pages deployment for the Dexus static frontend while documenting the required separate backend host, API URL, CORS, and Supabase callback changes.
+- [x] Prepare and upload the Dexus GitHub Pages frontend configuration to the owner-provided git@github.com:d1ranjan/Dexus.git repository using the static `gh-pages` branch.
+- [x] Use a browser-independent GitHub repository workflow because the My Browser settings page remains stuck on loading.
+- [x] Implement a GitHub Pages static frontend workflow with repository-subpath callbacks, an HTTPS API build contract, documented backend separation, and a strict server CORS allow-list.
+- [x] Complete the owner-authorized frontend upload to `d1ranjan/Dexus` and activate GitHub Pages from the `gh-pages` branch.
+- [x] Simplify the GitHub Pages workflow for a frontend-only upload while retaining clear documentation that Dexus data and authentication features still use the existing backend.
+- [x] Resume GitHub frontend upload via the branch-based fallback after GitHub restricted the workflow-file permission; publish and verify the static frontend instead of requiring a workflow upload.
+- [x] Complete the current frontend-only GitHub upload and GitHub Pages activation today, prioritizing the remaining permission verification and public static-site check.
+- [x] Use a branch-based GitHub Pages deployment fallback: publish source without `.github/workflows`, export the static frontend to `gh-pages`, configure Pages to serve that branch, and verify the public site at `https://d1ranjan.github.io/Dexus/`.
+- [x] Deploy the existing Dexus Express backend to Render, preserve server-only secrets and data providers, and connect the GitHub Pages frontend to `https://dexus-api.onrender.com`.
+- [x] Prepare a browser-independent Render deployment package because the connected Render dashboard remains stuck loading; complete the final account-side service creation only when the dashboard responds.
+- [x] Repair the Render Corepack pnpm-signature failure by using the pinned pnpm package directly, republish the Blueprint, and redeploy the existing `dexus-api` service.
+- [ ] Verify live Render-backed sign-up, email confirmation, sign-in, recovery, protected API access, and cross-user isolation from `https://d1ranjan.github.io/Dexus/`.
+- [x] Replace the Manus-managed Brain Dump AI and document storage services with portable Render-compatible providers while preserving server-only credentials and user isolation.
+- [x] Implement the selected free-first path: Gemini structured Brain Dump extraction plus Supabase Storage documents, with all credentials held only in Render.
+- [x] Use the current Supabase Secret key only as the Render-side document-storage credential; retain the Publishable key for existing Dexus authentication verification.
+- [ ] Verify the live GitHub Pages user flow for portable Brain Dump extraction and document upload after sign-in.
+- [x] Create a reusable skill for secure GitHub Pages, Render, Supabase Auth, Gemini, and Supabase Storage deployment workflows.
+- [x] Verify the live Supabase confirmation and recovery callback configuration, GitHub Pages callback route, and Render callback handler before saving the requested Dexus version; final email-inbox click remains a user-side check.
+- [x] Create a downloadable ZIP archive of the current Dexus source, excluding secrets, dependencies, transient builds, and local runtime files.
+- [ ] Verify the current production Supabase confirmation/recovery redirects, GitHub Pages callback, Render authentication contract, and remaining email-inbox click requirement.
+- [ ] Repair the GitHub Pages static export so it embeds the Render API URL instead of falling back to same-origin API requests, then re-run production authentication checks.

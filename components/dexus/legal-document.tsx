@@ -1,0 +1,16 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { router } from "expo-router";
+import { ScrollView, StyleSheet, Text, View, type TextStyle, type ViewStyle } from "react-native";
+import { useColors } from "@/hooks/use-colors";
+import { Card, DexusScreen, IconAction, Pill, PrimaryButton } from "@/components/dexus/primitives";
+
+export type LegalSection = { title: string; paragraphs: string[]; bullets?: string[] };
+
+export function LegalDocument({ title, effectiveDate, sections, related }: { title: string; effectiveDate: string; sections: LegalSection[]; related: "privacy" | "terms" }) {
+  const colors = useColors();
+  const relatedPath = related === "privacy" ? "/privacy" : "/terms";
+  const relatedLabel = related === "privacy" ? "Privacy Policy" : "Terms of Service";
+  return <DexusScreen title={title} subtitle={`Effective ${effectiveDate}`} action={<IconAction icon="arrow-back" label="Go back" onPress={() => router.back()} />}><ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}><Card style={[styles.notice, { backgroundColor: `${colors.warning}12`, borderColor: `${colors.warning}55` }]}><MaterialIcons name="gavel" size={22} color={colors.warning} /><View style={styles.noticeCopy}><Pill label="Draft — legal review required" tone="warning" /><Text style={[styles.noticeText, { color: colors.foreground }]}>This implementation-grounded draft should be reviewed by a qualified lawyer before any public commercial launch.</Text></View></Card>{sections.map((section) => <Card key={section.title} style={styles.section}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>{section.title}</Text>{section.paragraphs.map((paragraph, index) => <Text key={`${section.title}-${index}`} style={[styles.paragraph, { color: colors.muted }]}>{paragraph}</Text>)}{section.bullets?.map((item) => <View key={item} style={styles.bullet}><View style={[styles.dot, { backgroundColor: colors.primary }]} /><Text style={[styles.bulletText, { color: colors.muted }]}>{item}</Text></View>)}</Card>)}<Card style={styles.creator}><Text style={[styles.creatorText, { color: colors.foreground }]}>Created by Dipanshu Ranjan</Text><Text style={[styles.copyright, { color: colors.muted }]}>Dexus © 2026 Dipanshu Ranjan</Text></Card><PrimaryButton label={relatedLabel} icon="arrow-forward" tone="secondary" onPress={() => router.push(relatedPath)} /></ScrollView></DexusScreen>;
+}
+
+const styles = { scroll: { gap: 12, paddingBottom: 28 } satisfies ViewStyle, notice: { alignItems: "flex-start", flexDirection: "row", gap: 10 } satisfies ViewStyle, noticeCopy: { flex: 1, gap: 8 } satisfies ViewStyle, noticeText: { fontSize: 13, lineHeight: 19 } satisfies TextStyle, section: { gap: 10 } satisfies ViewStyle, sectionTitle: { fontSize: 17, fontWeight: "700" } satisfies TextStyle, paragraph: { fontSize: 13, lineHeight: 20 } satisfies TextStyle, bullet: { alignItems: "flex-start", flexDirection: "row", gap: 9 } satisfies ViewStyle, dot: { borderRadius: 3, height: 6, marginTop: 7, width: 6 } satisfies ViewStyle, bulletText: { flex: 1, fontSize: 13, lineHeight: 19 } satisfies TextStyle, creator: { alignItems: "center", gap: 5 } satisfies ViewStyle, creatorText: { fontSize: 15, fontWeight: "700" } satisfies TextStyle, copyright: { fontSize: 12 } satisfies TextStyle };
