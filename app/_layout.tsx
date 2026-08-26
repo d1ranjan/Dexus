@@ -2,6 +2,8 @@ import "@/global.css";
 import "react-native-url-polyfill/auto";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
+import { router } from "expo-router";
+import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -27,6 +29,15 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 export default function RootLayout() {
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
@@ -49,6 +60,19 @@ export default function RootLayout() {
     const unsubscribe = subscribeSafeAreaInsets(handleSafeAreaUpdate);
     return () => unsubscribe();
   }, [handleSafeAreaUpdate]);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const openTaskFromNotification = (response: Notifications.NotificationResponse) => {
+      const url = response.notification.request.content.data?.url;
+      if (url === "/tasks") router.push("/tasks");
+    };
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) openTaskFromNotification(response);
+    });
+    const subscription = Notifications.addNotificationResponseReceivedListener(openTaskFromNotification);
+    return () => subscription.remove();
+  }, []);
 
   // Create clients once and reuse them
   const [queryClient] = useState(

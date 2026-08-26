@@ -97,4 +97,7 @@
 - [x] Publish the latest Dexus frontend and backend updates so confirmed document deletion is available through GitHub Pages and Render.
 - [x] Add an audited administrator-only action to permanently remove a selected user’s private document and stored file with explicit confirmation.
 - [x] Add a confirmed self-service permanent account deletion flow that removes only the requesting user’s Dexus data and private stored files.
-- [ ] Publish the self-service account deletion frontend and backend update to GitHub Pages and Render.
+- [x] Publish the self-service account deletion frontend and backend update to GitHub Pages and Render.
+- [ ] Add user-controlled phone notifications for task deadlines, including permission handling, scheduled reminder cleanup, and task navigation.
+- [ ] Publish the completed phone reminder update to GitHub Pages and Render.
+- [ ] Inspect and explain the current Dexus People follow-up feature after completing phone reminder implementation.

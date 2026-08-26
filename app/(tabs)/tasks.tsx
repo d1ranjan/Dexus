@@ -1,10 +1,11 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { useColors } from "@/hooks/use-colors";
-import { trpc } from "@/lib/trpc";
-import { Card, DexusScreen, EmptyState, ErrorState, formatDate, IconAction, LoadingState, Pill, PrimaryButton } from "@/components/dexus/primitives";
+import { useEffect, useMemo, useState } from "react";
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Card, DexusScreen, EmptyState, ErrorState, formatDate, IconAction, LoadingState, Pill } from "@/components/dexus/primitives";
 import { EntityModal, type EntityValues } from "@/components/dexus/entity-modal";
+import { useColors } from "@/hooks/use-colors";
+import { cancelTaskDeadlineReminders, scheduleTaskDeadlineReminders, syncTaskDeadlineReminders } from "@/lib/task-reminders";
+import { trpc } from "@/lib/trpc";
 
 type TaskItem = { id: number; title: string; description: string | null; category: string | null; dueDate: Date | null; priority: "low" | "medium" | "high"; status: "open" | "completed" | "archived" };
 
@@ -15,16 +16,45 @@ export default function TasksScreen() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [selected, setSelected] = useState<TaskItem | null>(null);
   const tasks = trpc.tasks.list.useQuery({ status: filter, query: query || undefined });
+  const reminderProfile = trpc.dexus.profile.useQuery();
   const utils = trpc.useUtils();
   const refresh = () => Promise.all([utils.tasks.list.invalidate(), utils.dexus.dashboard.invalidate(), utils.timeline.list.invalidate()]);
   const create = trpc.tasks.create.useMutation({ onSuccess: refresh });
   const update = trpc.tasks.update.useMutation({ onSuccess: refresh });
   const remove = trpc.tasks.delete.useMutation({ onSuccess: refresh });
-  const save = async (values: EntityValues) => { if (selected) await update.mutateAsync({ id: selected.id, title: values.title, description: values.description || undefined, category: values.category || undefined, dueDate: values.date || null, priority: values.priority }); else await create.mutateAsync({ title: values.title, description: values.description || undefined, category: values.category || undefined, dueDate: values.date || null, priority: values.priority, tags: [] }); };
-  const complete = async (task: TaskItem) => { await update.mutateAsync({ id: task.id, status: task.status === "completed" ? "open" : "completed" }); };
+  const remindersEnabled = reminderProfile.data?.notificationsEnabled === true;
+
+  useEffect(() => {
+    if (remindersEnabled && tasks.data) void syncTaskDeadlineReminders(tasks.data as TaskItem[]);
+  }, [remindersEnabled, tasks.data]);
+
+  const save = async (values: EntityValues) => {
+    const dueDate = values.date ? new Date(`${values.date}T12:00:00`) : null;
+    if (selected) {
+      await update.mutateAsync({ id: selected.id, title: values.title, description: values.description || undefined, category: values.category || undefined, dueDate: values.date || null, priority: values.priority });
+      if (remindersEnabled) await scheduleTaskDeadlineReminders({ id: selected.id, title: values.title, dueDate, status: selected.status });
+      return;
+    }
+    const id = await create.mutateAsync({ title: values.title, description: values.description || undefined, category: values.category || undefined, dueDate: values.date || null, priority: values.priority, tags: [] });
+    if (remindersEnabled) await scheduleTaskDeadlineReminders({ id, title: values.title, dueDate, status: "open" });
+  };
+
+  const complete = async (task: TaskItem) => {
+    const nextStatus = task.status === "completed" ? "open" : "completed";
+    await update.mutateAsync({ id: task.id, status: nextStatus });
+    if (nextStatus === "completed") await cancelTaskDeadlineReminders(task.id);
+    else if (remindersEnabled) await scheduleTaskDeadlineReminders({ ...task, status: "open" });
+  };
+
   const items = useMemo(() => tasks.data ?? [], [tasks.data]);
   if (tasks.isLoading) return <DexusScreen><LoadingState /></DexusScreen>;
-  return <DexusScreen title="Tasks" subtitle="Your commitments, in one calm view." action={<IconAction icon="add" label="Create task" onPress={() => { setSelected(null); setEditorOpen(true); }} />}><View style={styles.search}><MaterialIcons name="search" size={19} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="Search tasks" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.foreground }]} /></View><View style={styles.filters}>{(["open", "completed"] as const).map((item) => <Pressable key={item} onPress={() => setFilter(item)} style={({ pressed }) => [styles.filter, { backgroundColor: filter === item ? colors.primary : colors.surface, borderColor: filter === item ? colors.primary : colors.border }, pressed && styles.pressed]}><Text style={[styles.filterLabel, { color: filter === item ? colors.background : colors.muted }]}>{item === "open" ? "Open" : "Completed"}</Text></Pressable>)}</View>{tasks.error ? <ErrorState message={tasks.error.message} onRetry={tasks.refetch} /> : <FlatList data={items} keyExtractor={(item) => item.id.toString()} contentContainerStyle={items.length ? styles.list : styles.empty} ListEmptyComponent={<EmptyState icon="check-circle-outline" title={filter === "open" ? "Your brain is clear." : "No completed tasks yet."} description={filter === "open" ? "Capture a thought and Dexus will make it actionable." : "Completed work will appear here."} actionLabel={filter === "open" ? "Add a task" : undefined} onAction={() => { setSelected(null); setEditorOpen(true); }} />} renderItem={({ item }) => <Card style={styles.task}><Pressable onPress={() => complete(item as TaskItem)} style={({ pressed }) => [styles.check, { borderColor: item.status === "completed" ? colors.success : colors.border, backgroundColor: item.status === "completed" ? colors.success : colors.surface }, pressed && styles.pressed]}>{item.status === "completed" ? <MaterialIcons name="check" size={16} color={colors.background} /> : null}</Pressable><Pressable onPress={() => { setSelected(item as TaskItem); setEditorOpen(true); }} style={({ pressed }) => [styles.taskMain, pressed && styles.pressed]}><Text style={[styles.taskTitle, { color: colors.foreground, textDecorationLine: item.status === "completed" ? "line-through" : "none" }]}>{item.title}</Text>{item.description ? <Text numberOfLines={2} style={[styles.taskDescription, { color: colors.muted }]}>{item.description}</Text> : null}<View style={styles.taskMeta}>{item.dueDate ? <Pill label={`Due ${formatDate(item.dueDate)}`} tone="warning" /> : null}<Pill label={item.priority} tone={item.priority === "high" ? "danger" : item.priority === "medium" ? "warning" : "neutral"} /></View></Pressable></Card>} /> }<EntityModal visible={editorOpen} heading={selected ? "Edit task" : "New task"} initial={selected ? { title: selected.title, description: selected.description ?? "", category: selected.category ?? "", date: selected.dueDate ? new Date(selected.dueDate).toISOString().slice(0, 10) : "", priority: selected.priority } : undefined} onClose={() => setEditorOpen(false)} onSave={save} onDelete={selected ? async () => { await remove.mutateAsync({ id: selected.id }); } : undefined} saveLabel={selected ? "Save changes" : "Create task"} /></DexusScreen>;
+
+  return <DexusScreen title="Tasks" subtitle="Your commitments, in one calm view." action={<IconAction icon="add" label="Create task" onPress={() => { setSelected(null); setEditorOpen(true); }} />}>
+    <View style={styles.search}><MaterialIcons name="search" size={19} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} placeholder="Search tasks" placeholderTextColor={colors.muted} style={[styles.searchInput, { color: colors.foreground }]} /></View>
+    <View style={styles.filters}>{(["open", "completed"] as const).map((item) => <Pressable key={item} onPress={() => setFilter(item)} style={({ pressed }) => [styles.filter, { backgroundColor: filter === item ? colors.primary : colors.surface, borderColor: filter === item ? colors.primary : colors.border }, pressed && styles.pressed]}><Text style={[styles.filterLabel, { color: filter === item ? colors.background : colors.muted }]}>{item === "open" ? "Open" : "Completed"}</Text></Pressable>)}</View>
+    {tasks.error ? <ErrorState message={tasks.error.message} onRetry={tasks.refetch} /> : <FlatList data={items} keyExtractor={(item) => item.id.toString()} contentContainerStyle={items.length ? styles.list : styles.empty} ListEmptyComponent={<EmptyState icon="check-circle-outline" title={filter === "open" ? "Your brain is clear." : "No completed tasks yet."} description={filter === "open" ? "Capture a thought and Dexus will make it actionable." : "Completed work will appear here."} actionLabel={filter === "open" ? "Add a task" : undefined} onAction={() => { setSelected(null); setEditorOpen(true); }} />} renderItem={({ item }) => <Card style={styles.task}><Pressable onPress={() => complete(item as TaskItem)} style={({ pressed }) => [styles.check, { borderColor: item.status === "completed" ? colors.success : colors.border, backgroundColor: item.status === "completed" ? colors.success : colors.surface }, pressed && styles.pressed]}>{item.status === "completed" ? <MaterialIcons name="check" size={16} color={colors.background} /> : null}</Pressable><Pressable onPress={() => { setSelected(item as TaskItem); setEditorOpen(true); }} style={({ pressed }) => [styles.taskMain, pressed && styles.pressed]}><Text style={[styles.taskTitle, { color: colors.foreground, textDecorationLine: item.status === "completed" ? "line-through" : "none" }]}>{item.title}</Text>{item.description ? <Text numberOfLines={2} style={[styles.taskDescription, { color: colors.muted }]}>{item.description}</Text> : null}<View style={styles.taskMeta}>{item.dueDate ? <Pill label={`Due ${formatDate(item.dueDate)}`} tone="warning" /> : null}<Pill label={item.priority} tone={item.priority === "high" ? "danger" : item.priority === "medium" ? "warning" : "neutral"} /></View></Pressable></Card>} />}
+    <EntityModal visible={editorOpen} heading={selected ? "Edit task" : "New task"} initial={selected ? { title: selected.title, description: selected.description ?? "", category: selected.category ?? "", date: selected.dueDate ? new Date(selected.dueDate).toISOString().slice(0, 10) : "", priority: selected.priority } : undefined} onClose={() => setEditorOpen(false)} onSave={save} onDelete={selected ? async () => { await cancelTaskDeadlineReminders(selected.id); await remove.mutateAsync({ id: selected.id }); } : undefined} saveLabel={selected ? "Save changes" : "Create task"} />
+  </DexusScreen>;
 }
 
 const styles = StyleSheet.create({ search: { alignItems: "center", borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", gap: 9, paddingHorizontal: 13, minHeight: 46 }, searchInput: { flex: 1, fontSize: 15, paddingVertical: 8 }, filters: { flexDirection: "row", gap: 8 }, filter: { alignItems: "center", borderRadius: 12, borderWidth: 1, minHeight: 38, paddingHorizontal: 15, justifyContent: "center" }, filterLabel: { fontSize: 13, fontWeight: "700" }, list: { gap: 10, paddingBottom: 22 }, empty: { flexGrow: 1, paddingVertical: 22 }, task: { alignItems: "flex-start", flexDirection: "row", gap: 12 }, check: { alignItems: "center", borderRadius: 11, borderWidth: 1.5, height: 22, justifyContent: "center", marginTop: 1, width: 22 }, taskMain: { flex: 1, gap: 6 }, taskTitle: { fontSize: 16, fontWeight: "700", lineHeight: 21 }, taskDescription: { fontSize: 13, lineHeight: 18 }, taskMeta: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 1 }, pressed: { opacity: 0.7 }, });

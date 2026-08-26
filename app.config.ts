@@ -129,6 +129,14 @@ const config: ExpoConfig = {
       },
     ],
     [
+      "expo-notifications",
+      {
+        icon: "./assets/images/android-icon-monochrome.png",
+        color: "#000000",
+        defaultChannel: "dexus-deadlines",
+      },
+    ],
+    [
       "expo-splash-screen",
       {
         image: "./assets/images/splash-icon.png",
