@@ -98,6 +98,9 @@
 - [x] Add an audited administrator-only action to permanently remove a selected user’s private document and stored file with explicit confirmation.
 - [x] Add a confirmed self-service permanent account deletion flow that removes only the requesting user’s Dexus data and private stored files.
 - [x] Publish the self-service account deletion frontend and backend update to GitHub Pages and Render.
-- [ ] Add user-controlled phone notifications for task deadlines, including permission handling, scheduled reminder cleanup, and task navigation.
-- [ ] Publish the completed phone reminder update to GitHub Pages and Render.
-- [ ] Inspect and explain the current Dexus People follow-up feature after completing phone reminder implementation.
+- [x] Add user-controlled phone notifications for task deadlines, including permission handling, scheduled reminder cleanup, and task navigation.
+- [x] Publish the completed phone reminder update to GitHub Pages and Render.
+- [x] Inspect and explain the current Dexus People follow-up feature after completing phone reminder implementation.
+- [ ] Manually validate phone reminders on a physical Android or iOS device after installing a new native build with the notification configuration.
+- [x] Add manual follow-up creation in People and sort contacts with open follow-ups before those without them.
+- [ ] Publish the completed People follow-up update to GitHub Pages and Render.
