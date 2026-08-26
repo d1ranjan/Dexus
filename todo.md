@@ -94,5 +94,7 @@
 - [x] Diagnose and repair saved Dexus documents that show no generated Gemini summary, without altering the original uploads or user isolation.
 - [x] Diagnose and repair Brain Dump reports of “no items detected” when the input contains explicit goals; preserve existing goals and user isolation.
 - [x] Add a confirmed self-service delete action that removes only the signed-in user’s document record and its private stored file.
-- [ ] Publish the latest Dexus frontend and backend updates so confirmed document deletion is available through GitHub Pages and Render.
+- [x] Publish the latest Dexus frontend and backend updates so confirmed document deletion is available through GitHub Pages and Render.
 - [x] Add an audited administrator-only action to permanently remove a selected user’s private document and stored file with explicit confirmation.
+- [x] Add a confirmed self-service permanent account deletion flow that removes only the requesting user’s Dexus data and private stored files.
+- [ ] Publish the self-service account deletion frontend and backend update to GitHub Pages and Render.

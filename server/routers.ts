@@ -7,12 +7,14 @@ import { COOKIE_NAME } from "../shared/const.js";
 import { priorities } from "../shared/dexus";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
+import { ENV } from "./_core/env";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { answerFromContext, extractBrainDump, summarizeDocument, validateBrainDumpAnalysis } from "./ai";
 import * as adminData from "./admin";
 import * as db from "./db";
 import { displayDocumentSummary, hasReadableDocumentText } from "./document-text";
 import { storageDelete, storageGetSignedUrl, storagePut } from "./storage";
+import { deleteSupabaseAuthUser } from "./supabase-admin";
 import { transcribeAudio } from "./_core/voiceTranscription";
 
 const priority = z.enum(priorities);
@@ -57,6 +59,7 @@ async function trackedAi<T>(input: { userId: number; requestType: string; reques
 export const appRouter = router({
   system: systemRouter,
   auth: router({ me: publicProcedure.query((opts) => opts.ctx.user), logout: publicProcedure.mutation(({ ctx }) => { const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true } as const; }) }),
+  account: router({ delete: activeUserProcedure.input(z.object({ confirmation: z.literal("DELETE MY ACCOUNT") })).mutation(async ({ ctx }) => { const plan = await db.getOwnAccountDeletionPlan(ctx.user.id); if (ENV.ownerSupabaseUserId && plan.providerUserId === ENV.ownerSupabaseUserId) throw new TRPCError({ code: "FORBIDDEN", message: "The configured Dexus owner account cannot be deleted through self-service controls." }); for (const storageKey of plan.storageKeys) await storageDelete(storageKey); await db.deleteOwnAccountData(ctx.user.id); await deleteSupabaseAuthUser(plan.providerUserId); const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true }; }) }),
   dexus: router({
     dashboard: activeUserProcedure.query(({ ctx }) => db.dashboard(ctx.user.id)), profile: activeUserProcedure.query(({ ctx }) => db.ensureProfile(ctx.user.id, ctx.user.name)), updateProfile: activeUserProcedure.input(z.object({ displayName: z.string().trim().max(120).optional(), timezone: z.string().trim().max(80).optional(), defaultPriority: priority.optional(), appearance: z.enum(["system", "light", "dark"]).optional(), aiSuggestionsEnabled: z.boolean().optional(), notificationsEnabled: z.boolean().optional() })).mutation(({ ctx, input }) => db.updateProfile(ctx.user.id, input)),
     processBrainDump: activeUserProcedure.input(z.object({ text: boundedText(12000), timezone: z.string().trim().max(80).default("UTC") })).mutation(({ ctx, input }) => trackedAi({ userId: ctx.user.id, requestType: "brain_dump_extraction", requestId: requestId(ctx.req.headers), operation: () => extractBrainDump(input) })), saveBrainDump: activeUserProcedure.input(brainDumpInput).mutation(async ({ ctx, input }) => { const parsed = validateBrainDumpAnalysis(input.analysis); if (!parsed.success) throw new Error("Dexus could not validate the edited AI results."); await db.saveApprovedBrainDump(ctx.user.id, input.originalText, parsed.data); return { success: true }; }), search: activeUserProcedure.input(z.object({ query: boundedText(240) })).query(({ ctx, input }) => db.searchUserData(ctx.user.id, input.query)),
